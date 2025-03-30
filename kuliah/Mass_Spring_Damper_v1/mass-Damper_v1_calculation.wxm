@@ -1,0 +1,58 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 23.05.1 ] */
+/* [wxMaxima: input   start ] */
+/* Parameter Sistem */
+m: 1; /* Massa (kg) */
+b: 0.5; /* Koefisien Peredaman (N.s/m) */
+k: 2; /* Konstanta Pegas (N/m) */
+u: 0; /* Input kontrol */
+
+x0: 1; /* Posisi Awal */
+v0: 0; /* Kecepatan Awal */
+
+/* Fungsi untuk menghitung turunan sistem */
+odesystem: [
+  diff(x, t, 2) + (b/m)*diff(x, t) + (k/m)*x = u
+];
+
+/* Implementasi Metode Runge-Kutta */
+runge_kutta(func, x0, v0, t0, tf, dt) := block(
+    [t, x, v, k1, k2, k3, k4, l1, l2, l3, l4],
+    t: t0,
+    x: x0,
+    v: v0,
+    while t <= tf do (
+        /* Runge-Kutta untuk posisi dan kecepatan */
+        l1: dt * v,
+        k1: dt * (u - (b/m)*v - (k/m)*x),
+        
+        l2: dt * (v + k1/2),
+        k2: dt * (u - (b/m)*(v + k1/2) - (k/m)*(x + l1/2)),
+        
+        l3: dt * (v + k2/2),
+        k3: dt * (u - (b/m)*(v + k2/2) - (k/m)*(x + l2/2)),
+        
+        l4: dt * (v + k3),
+        k4: dt * (u - (b/m)*(v + k3) - (k/m)*(x + l3)),
+        
+        /* Update posisi dan kecepatan */
+        x: x + (l1 + 2*l2 + 2*l3 + l4)/6,
+        v: v + (k1 + 2*k2 + 2*k3 + k4)/6,
+        
+        t: t + dt
+    ),
+    return([x, v])
+);
+
+/* Simulasi dengan Runge-Kutta */
+dt: 0.01; /* Time step */
+t0: 0; /* Waktu awal */
+tf: 10; /* Waktu akhir */
+result: runge_kutta(odesystem, x0, v0, t0, tf, dt);
+
+/* [wxMaxima: input   end   ] */
+
+
+
+/* Old versions of Maxima abort on loading files that end in a comment. */
+"Created with wxMaxima 23.05.1"$
