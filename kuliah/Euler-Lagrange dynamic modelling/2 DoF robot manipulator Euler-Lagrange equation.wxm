@@ -1,0 +1,112 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 23.05.1 ] */
+/* [wxMaxima: input   start ] */
+/* ===========================================
+   Nomor 1: 2 link robot manipulator
+   =========================================== */
+m1: m1; /* Massa link 1 */
+m2: m2; /* Massa link 2 */
+L1: L1; /* Panjang link 1 */
+L2: L2; /* Panjang link 2 */
+lc1: lc1; /* Jarak ke pusat massa (COM) link 1 */
+lc2: lc2; /* Jarak ke pusat massa (COM) link 2 */
+I1: I1; /* Momen inersia link 1 */
+I2: I2; /* Momen inersia link 2 */
+g: g; /* Percepatan gravitasi */
+theta1: theta1; /* Sudut link 1 */
+theta2: theta2; /* Sudut link 2 relatif terhadap link 1 */
+theta1_dot: theta1_dot; /* Kecepatan sudut link 1 */
+theta2_dot: theta2_dot; /* Kecepatan sudut link 2 */
+theta1_ddot: theta1_ddot; /* Percepatan sudut link 1 */
+theta2_ddot: theta2_ddot; /* Percepatan sudut link 2 */
+tau1: tau1; /* Torsi pada joint 1 */
+tau2: tau2; /* Torsi pada joint 2 */
+
+/* ===========================================
+   ENERGI KINETIK SISTEM
+   =========================================== */
+/* Kecepatan sudut absolut link 2 */
+theta2_abs_dot: theta1_dot + theta2_dot;
+
+/* Energi kinetik link 1 */
+K1: 1/2 * m1 * lc1^2 * theta1_dot^2 + 1/2 * I1 * theta1_dot^2;
+
+/* Kecepatan pusat massa link 2 (menggunakan teorema Pythagoras) */
+v_c2_sq: L1^2 * theta1_dot^2 
+       + lc2^2 * theta2_abs_dot^2 
+       + 2 * L1 * lc2 * theta1_dot * theta2_abs_dot * cos(theta2);
+
+/* Energi kinetik link 2 */
+K2: 1/2 * m2 * v_c2_sq + 1/2 * I2 * theta2_abs_dot^2;
+
+/* Total energi kinetik sistem */
+K: K1 + K2;
+
+/* ===========================================
+   ENERGI POTENSIAL SISTEM
+   =========================================== */
+P: m1 * g * lc1 * sin(theta1) 
+ + m2 * g * (L1 * sin(theta1) + lc2 * sin(theta1 + theta2));
+
+/* ===========================================
+   LAGRANGIAN SISTEM
+   =========================================== */
+L: K - P;
+
+/* ===========================================
+   PERSAMAAN EULER-LAGRANGE UNTUK THETA1
+   =========================================== */
+dL_dtheta1_dot: diff(L, theta1_dot);
+d_dt_dL_dtheta1_dot: diff(dL_dtheta1_dot, t, 1);
+dL_dtheta1: diff(L, theta1);
+Eq1: d_dt_dL_dtheta1_dot - dL_dtheta1 = tau1;
+
+/* ===========================================
+   PERSAMAAN EULER-LAGRANGE UNTUK THETA2
+   =========================================== */
+dL_dtheta2_dot: diff(L, theta2_dot);
+d_dt_dL_dtheta2_dot: diff(dL_dtheta2_dot, t, 1);
+dL_dtheta2: diff(L, theta2);
+Eq2: d_dt_dL_dtheta2_dot - dL_dtheta2 = tau2;
+
+/* ===========================================
+   SUBSTITUSI TURUNAN WAKTU
+   =========================================== */
+Eq1_subst: subst([diff(theta1, t, 2) = theta1_ddot, 
+                  diff(theta2, t, 2) = theta2_ddot, 
+                  diff(theta1, t) = theta1_dot, 
+                  diff(theta2, t) = theta2_dot], Eq1);
+
+Eq2_subst: subst([diff(theta1, t, 2) = theta1_ddot, 
+                  diff(theta2, t, 2) = theta2_ddot, 
+                  diff(theta1, t) = theta1_dot, 
+                  diff(theta2, t) = theta2_dot], Eq2);
+
+/* ===========================================
+   SIMPLIFIKASI PERSAMAAN
+   =========================================== */
+Eq1_final: ratsimp(Eq1_subst);
+Eq2_final: ratsimp(Eq2_subst);
+
+/* ===========================================
+   OUTPUT PERSAMAAN FINAL
+   =========================================== */
+print("=================================================");
+print("PERSAMAAN DINAMIKA ROBOT MANIPULATOR 2 DOF");
+print("=================================================");
+print("Persamaan Euler-Lagrange untuk θ1:");
+print("-------------------------------------------------");
+Eq1_final;
+print("-------------------------------------------------");
+
+print("Persamaan Euler-Lagrange untuk θ2:");
+print("-------------------------------------------------");
+Eq2_final;
+print("-------------------------------------------------");
+
+/* [wxMaxima: input   end   ] */
+
+
+
+/* Old versions of Maxima abort on loading files that end in a comment. */
+"Created with wxMaxima 23.05.1"$

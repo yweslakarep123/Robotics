@@ -1,0 +1,62 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 23.05.1 ] */
+/* [wxMaxima: input   start ] */
+/* ============================================================
+   Nomor 2: Wheeled Pendulum
+   ============================================================ */
+M : M;   /* Massa badan robot */
+m : m;   /* Massa roda */
+R : R;   /* Jari-jari roda */
+Jw : Jw; /* Momen inersia roda */
+Jp : Jp; /* Momen inersia badan robot terhadap pusat massanya */
+l : l;   /* Jarak dari sumbu roda ke pusat massa badan */
+g : g;   /* Percepatan gravitasi */
+
+/* Variabel sudut dan turunannya */
+phi : phi(t);     /* Sudut rotasi roda */
+theta : theta(t); /* Sudut badan robot dari vertikal */
+phip : diff(phi, t);   /* Kecepatan sudut roda */
+thetap : diff(theta, t); /* Kecepatan sudut badan */
+phipp : diff(phi, t, 2);  /* Percepatan sudut roda */
+thetapp : diff(theta, t, 2); /* Percepatan sudut badan */
+
+tau : tau; /* Torsi yang diberikan pada roda */
+
+/* ============================================================
+   PERSAMAAN DINAMIKA SISTEM
+   ============================================================ */
+
+/* Persamaan 1 (Dari PDF, persamaan 10) */
+eq1 : (Jw + (M + m) * R^2) * phipp 
+    + m * R * l * cos(theta) * thetapp 
+    - m * R * l * thetap^2 * sin(theta) 
+    = tau;
+
+/* Persamaan 2 (Dari PDF, persamaan 11) */
+eq2 : (Jp + m * l^2) * thetapp 
+    + m * R * l * cos(theta) * phipp 
+    - m * g * l * sin(theta) 
+    = 0;
+
+/* ============================================================
+   MENAMPILKAN PERSAMAAN
+   ============================================================ */
+print("============================================================");
+print("PERSAMAAN DINAMIKA ROBOT PENDULUM TERBALIK BERODA");
+print("============================================================");
+print("Persamaan 1 (Dinamika rotasi roda):");
+print("------------------------------------------------------------");
+eq1;
+print("------------------------------------------------------------");
+
+print("Persamaan 2 (Dinamika rotasi badan):");
+print("------------------------------------------------------------");
+eq2;
+print("------------------------------------------------------------");
+
+/* [wxMaxima: input   end   ] */
+
+
+
+/* Old versions of Maxima abort on loading files that end in a comment. */
+"Created with wxMaxima 23.05.1"$
