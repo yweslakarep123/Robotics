@@ -1,0 +1,264 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 23.05.1 ] */
+/* [wxMaxima: title   start ]
+Dynamic Modelling of Differential-Drive Mobile Robots using Lagrange and Newton-Euler
+   [wxMaxima: title   end   ] */
+
+
+/* [wxMaxima: section start ]
+Kinematic Constraints
+   [wxMaxima: section end   ] */
+
+
+/* [wxMaxima: input   start ] */
+/* Define the constraint matrix Lambda(q) */
+Lambda(theta, L, R) := matrix(
+    [-sin(theta), cos(theta), 0, 0, 0],
+    [cos(theta), sin(theta), L, -R, 0],
+    [cos(theta), sin(theta), -L, 0, -R]
+);
+
+/* Define the generalized velocity vector q_dot */
+q_dot : matrix(
+    [x_a_dot],
+    [y_a_dot],
+    [theta_dot],
+    [phi_R_dot],
+    [phi_L_dot]
+);
+
+/* Constraint equation: Lambda(q) . q_dot = 0 */
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: section start ]
+Kinematic Model
+   [wxMaxima: section end   ] */
+
+
+/* [wxMaxima: input   start ] */
+/* Robot frame velocity */
+robot_frame_velocity(R, L, phi_R_dot, phi_L_dot) := (
+    matrix(
+        [R/2, R/2],
+        [0, 0],
+        [R/(2*L), -R/(2*L)]
+    ) . matrix([phi_R_dot], [phi_L_dot])
+);
+
+/* Inertial frame velocity */
+inertial_frame_velocity(theta, v, omega) := (
+    matrix(
+        [cos(theta), 0],
+        [sin(theta), 0],
+        [0, 1]
+    ) . matrix([v], [omega])
+);
+
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: section start ]
+kinematics model of the wheel 
+   [wxMaxima: section end   ] */
+
+
+/* [wxMaxima: input   start ] */
+/* Kinematic model of the wheels */
+kinematic_right_wheel(Vu, L, theta_dot, R, phi_R_dot) := 
+    ( Vu + L * theta_dot = R * phi_R_dot );
+
+kinematic_left_wheel(Vu, L, theta_dot, R, phi_L_dot) := 
+    ( Vu - L * theta_dot = R * phi_L_dot );
+
+/* Example usage: Given robot velocities, find wheel velocities */
+Vu_val: 0.5; /* Linear velocity of the robot */
+L_val: 0.3; /* Half-distance between wheels */
+theta_dot_val: 0.1; /* Angular velocity of the robot */
+R_val: 0.1; /* Wheel radius */
+
+/* Solve for the angular velocity of the right wheel */
+right_wheel_eq: kinematic_right_wheel(Vu_val, L_val, theta_dot_val, R_val, phi_R_dot);
+phi_R_dot_solution: solve([right_wheel_eq], [phi_R_dot]);
+
+/* Display result safely */
+if length(phi_R_dot_solution) > 0 then (
+    disp("Angular velocity of the right wheel (phi_R_dot): ", rhs(first(phi_R_dot_solution)))
+) else (
+    disp("No solution found for phi_R_dot")
+);
+
+/* Solve for the angular velocity of the left wheel */
+left_wheel_eq: kinematic_left_wheel(Vu_val, L_val, theta_dot_val, R_val, phi_L_dot);
+phi_L_dot_solution: solve([left_wheel_eq], [phi_L_dot]);
+
+/* Display result safely */
+if length(phi_L_dot_solution) > 0 then (
+    disp("Angular velocity of the left wheel (phi_L_dot): ", rhs(first(phi_L_dot_solution)))
+) else (
+    disp("No solution found for phi_L_dot")
+);
+
+/* Example usage: Given wheel velocities, find robot velocities */
+phi_R_dot_given: 6; /* Angular velocity of the right wheel */
+phi_L_dot_given: 4; /* Angular velocity of the left wheel */
+
+/* Solve for Vu and theta_dot */
+eq1: kinematic_right_wheel(Vu, L_val, theta_dot, R_val, phi_R_dot_given);
+eq2: kinematic_left_wheel(Vu, L_val, theta_dot, R_val, phi_L_dot_given);
+solution: solve([eq1, eq2], [Vu, theta_dot]);
+
+/* Display results safely */
+if length(solution) >= 2 then (
+    disp("Robot linear velocity (Vu): ", rhs(solution[1])),
+    disp("Robot angular velocity (theta_dot): ", rhs(solution[2]))
+) else (
+    disp("No valid solution found for Vu and theta_dot")
+);
+
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: section start ]
+Actuator (DC Motor) Model
+   [wxMaxima: section end   ] */
+
+
+/* [wxMaxima: input   start ] */
+/* Actuator (DC Motor) Model */
+armature_current(Va, Km, phi_dot, Ra, La, S) := 
+    (Va - Km * phi_dot) / (Ra + La * S);
+
+motor_torque(Kt, ia) := 
+    Kt * ia;
+
+/* Steady-state (Laplace S -> 0, La -> 0) */
+steady_state_armature_current(Va, Km, phi_dot, Ra) := 
+    (Va - Km * phi_dot) / Ra;
+
+steady_state_motor_torque(Kt, Va, Km, phi_dot, Ra) := 
+    Kt * (Va - Km * phi_dot) / Ra;
+
+/* Example with numerical values */
+Va_val: 12;  /* Applied voltage */
+Km_val: 0.1; /* Back-EMF constant */
+phi_dot_val: 5; /* Motor angular velocity */
+Ra_val: 1; /* Armature resistance */
+Kt_val: 0.1; /* Torque constant */
+
+/* Compute steady-state values */
+ia_steady: steady_state_armature_current(Va_val, Km_val, phi_dot_val, Ra_val);
+torque_steady: steady_state_motor_torque(Kt_val, Va_val, Km_val, phi_dot_val, Ra_val);
+
+/* Display results */
+disp("Steady-state armature current (ia_ss): ", ia_steady);
+disp("Steady-state motor torque (T_ss): ", torque_steady);
+
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: section start ]
+Lagrange Dynamic Approach
+   [wxMaxima: section end   ] */
+
+
+/* [wxMaxima: input   start ] */
+/* Kinetic Energy T */
+T(m, mw, d, theta_dot, x_a_dot, y_a_dot, Iw, phi_R_dot, phi_L_dot, I, theta) := 
+  1/2 * m * (x_a_dot^2 + y_a_dot^2) - 
+  mw * d * theta_dot * (y_a_dot * cos(theta) - x_a_dot * sin(theta)) +
+  1/2 * Iw * (phi_R_dot^2 + phi_L_dot^2) + 
+  1/2 * I * theta_dot^2;
+
+/* Lagrangian Function L (Potential Energy V = 0) */
+L(m, mw, d, theta_dot, x_a_dot, y_a_dot, Iw, phi_R_dot, phi_L_dot, I, theta) := 
+  T(m, mw, d, theta_dot, x_a_dot, y_a_dot, Iw, phi_R_dot, phi_L_dot, I, theta);
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: section start ]
+Lagrange Equation
+   [wxMaxima: section end   ] */
+
+
+/* [wxMaxima: input   start ] */
+/* Generalized coordinates */
+q : [x_a, y_a, theta, phi_R, phi_L];
+q_dot_vars : [x_a_dot, y_a_dot, theta_dot, phi_R_dot, phi_L_dot];
+
+/* Lagrange equation for each generalized coordinate */
+lagrange_eq(L, q_i, q_i_dot, F_i, Lambda_T, lambda) := 
+    diff(L, q_i_dot, 1) - diff(L, q_i, 1) - F_i - (Lambda_T . lambda);
+
+/* Example: Define a sample Lagrangian L (must be defined properly for your system) */
+L_example : L(m, mw, d, theta_dot, x_a_dot, y_a_dot, Iw, phi_R_dot, phi_L_dot, I, theta);
+
+/* Example for x_a */
+eq_x_a : lagrange_eq(L_example, x_a, x_a_dot, F_x_a, Lambda_T, lambda) = 0;
+
+/* Repeat for other generalized coordinates */
+
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: section start ]
+Newton-Euler Approach
+   [wxMaxima: section end   ] */
+
+
+/* [wxMaxima: input   start ] */
+/* Newton-Euler equations */
+newton_euler_eq1(M, a_u, F_uL, F_uR) := ( M * a_u = F_uL + F_uR );
+newton_euler_eq2(M, a_w, F_wL, F_wR) := ( M * a_w = F_wL - F_wR );
+newton_euler_eq3(J, theta_double_dot, F_uR, F_uL, L, F_wR, F_wL, d) := 
+    ( J * theta_double_dot = (F_uR - F_uL) * L + (F_wR - F_wL) * d );
+
+/* Simplified equations with non-holonomic constraints */
+simplified_eq1_torque(v_u_dot, d, theta_dot, M, TR, TL, R) :=
+    v_u_dot = d * theta_dot^2 + 1/M * ((TL/R) + (TR/R));
+
+simplified_eq2_torque(theta_double_dot, L, M, d, J, TR, TL, R, v_u_dot, theta_dot) :=
+    theta_double_dot = L / (M * d^2 + J) * ((TR/R) - (TL/R)) -
+                        (M * d * v_u_dot) / (M * d^2 + J) * theta_dot;
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: section start ]
+final dynamic model
+   [wxMaxima: section end   ] */
+
+
+/* [wxMaxima: input   start ] */
+/* Final dynamic model from the image */
+final_dynamic_model_theta_double_dot(L, M, d, J, TR, TL, R, v_u_dot) :=
+  theta_double_dot = L / (M*d^2 + J) * (TR - TL) - (M*d / (R * (M*d^2 + J))) * v_u_dot;
+
+final_dynamic_model_v_u_dot(M, d, theta_dot, TR, TL, R) :=
+  M * v_u_dot = M * d * theta_dot^2 + (TR + TL) / R;
+
+/* Example usage (assuming you have values for the parameters and torques) */
+M_val: 10; /* Total mass */
+d_val: 0.2; /* Distance from CM to wheel axis */
+J_val: 1; /* Moment of inertia */
+L_val: 0.3; /* Half-distance between wheels */
+R_val: 0.1; /* Wheel radius */
+TR_val: 1; /* Right wheel torque */
+TL_val: 0.8; /* Left wheel torque */
+theta_dot_val: 0.5; /* Angular velocity */
+
+/* Calculate v_u_dot */
+v_u_dot_eq: final_dynamic_model_v_u_dot(M_val, d_val, theta_dot_val, TR_val, TL_val, R_val);
+v_u_dot_numerical: rhs(solve([v_u_dot_eq], [v_u_dot])[1]);
+
+/* Calculate theta_double_dot using the calculated v_u_dot */
+theta_double_dot_eq: final_dynamic_model_theta_double_dot(L_val, M_val, d_val, J_val, TR_val, TL_val, R_val, v_u_dot_numerical);
+theta_double_dot_numerical: rhs(solve([theta_double_dot_eq], [theta_double_dot])[1]);
+
+print("Linear acceleration (v_u_dot): ", v_u_dot_numerical);
+print("Angular acceleration (theta_double_dot): ", theta_double_dot_numerical);
+/* [wxMaxima: input   end   ] */
+
+
+
+/* Old versions of Maxima abort on loading files that end in a comment. */
+"Created with wxMaxima 23.05.1"$
